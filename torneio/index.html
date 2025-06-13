@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3º ARMIL CUP - Torneio de Futsal Iniciados</title>
+    
+    <!-- Firebase v9+ SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBjmAXfeufT4nUhz8QC8MSJBLroYzKQWRg",
+            authDomain: "armil-f539f.firebaseapp.com",
+            databaseURL: "https://armil-f539f-default-rtdb.firebaseio.com",
+            projectId: "armil-f539f",
+            storageBucket: "armil-f539f.firebasestorage.app",
+            messagingSenderId: "954636521330",
+            appId: "1:954636521330:web:7170da80b622aaf0be17eb"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Tornar as funções globais para uso no HTML
+        window.firebaseApp = app;
+        window.database = database;
+        window.dbRef = ref;
+        window.dbSet = set;
+        window.dbGet = get;
+        window.dbOnValue = onValue;
+        window.dbUpdate = update;
+    </script>
+
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tournament-title {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #1e40af 100%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tournament-title::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .date-text {
+            font-size: 0.875rem;
+            color: #e0f2fe;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            letter-spacing: 0.05em;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .venue-text {
+            font-size: 1rem;
+            color: #e0f2fe;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .categories-text {
+            font-size: 0.875rem;
+            color: #bae6fd;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 1.8rem;
+            }
+
+            .venue-text {
+                font-size: 0.875rem;
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-outline {
+            border: 1px solid #d1d5db;
+            color: #4b5563;
+        }
+
+        .badge-secondary {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .badge-destructive {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 28rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-outline {
+            border: 1px solid #d1d5db;
+            color: #4b5563;
+            background-color: white;
+        }
+
+        .btn-outline:hover {
+            background-color: #f3f4f6;
+        }
+
+        .btn-destructive {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-destructive:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .standings-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .standings-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .standings-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0;
+        }
+
+        .standings-content {
+            padding: 0;
+        }
+
+        .standings-table-header {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 1px solid #f3f4f6;
+            text-align: center;
+        }
+
+        .standings-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.2s;
+            align-items: center;
+        }
+
+        .standings-row:hover {
+            background-color: #f9fafb;
+        }
+
+        .standings-row:last-child {
+            border-bottom: none;
+        }
+
+        .position {
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+        }
+
+        .team-name {
+            font-weight: 500;
+            color: #111827;
+            text-align: left;
+            padding-left: 0.5rem;
+        }
+
+        .points {
+            font-weight: 600;
+            color: #059669;
+            font-size: 1.125rem;
+            text-align: center;
+        }
+
+        .games {
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .group-separator {
+            background-color: #f3f4f6;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .input {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            background-color: white;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-destructive {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .password-input-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .input-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .match-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background-color: white;
+            transition: background-color 0.2s;
+        }
+
+        .match-card:hover {
+            background-color: #f9fafb;
+        }
+
+        .match-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .match-teams {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #111827;
+            text-align: center;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .match-score {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #059669;
+            text-align: center;
+        }
+
+        .match-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .match-time-field {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .match-time {
+            font-weight: 500;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .match-field {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .match-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+            .standings-table-header,
+            .standings-row {
+                grid-template-columns: 0.8fr 2fr 0.8fr 0.8fr;
+                gap: 0.25rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .team-name {
+                font-size: 0.875rem;
+                padding-left: 0.25rem;
+            }
+
+            .match-header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+
+            .match-teams {
+                font-size: 0.95rem;
+            }
+
+            .match-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .match-time-field {
+                justify-content: center;
+            }
+
+            .match-actions {
+                justify-content: center;
+            }
+
+            .tab-button {
+                padding: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            .tab-button svg {
+                width: 1rem;
+                height: 1rem;
+            }
+
+            .standings-title {
+                font-size: 1.125rem;
+            }
+
+            .modal-content {
+                margin: 0.5rem;
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .standings-table-header,
+            .standings-row {
+                font-size: 0.8rem;
+            }
+
+            .points {
+                font-size: 1rem;
+            }
+
+            .match-teams {
+                font-size: 0.9rem;
+            }
+
+            .match-score {
+                font-size: 1.125rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <!-- Tournament Title Card -->
+            <div class="tournament-title">
+                <div class="main-title">3ª EDIÇÃO ARMIL CUP</div>
+                <div class="date-text">7 de junho</div>
+                <div class="venue-text">Campo do Armil</div>
+                <div class="categories-text">Iniciados</div>
+            </div>
+
+            <div class="flex items-center justify-center gap-4">
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="current-time"></span>
+                </div>
+                <button id="admin-login-btn" class="btn btn-outline btn-sm flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Admin
+                </button>
+                <button id="admin-logout-btn" class="btn btn-destructive btn-sm flex items-center gap-2" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Sair Admin
+                </button>
+            </div>
+            <div class="mt-2" id="admin-badge" style="display: none;">
+                <span class="badge badge-destructive animate-pulse">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 mr-1">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 0 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    MODO ADMINISTRADOR ATIVO
+                </span>
+                <button id="reset-db-btn" class="btn btn-destructive btn-sm mt-2">Reinicializar Dados</button>
+            </div>
+        </div>
+
+        <!-- Live Matches Alert -->
+        <div id="live-matches-container" class="mb-6" style="display: none;">
+            <div class="standings-card border-red-200 bg-red-50">
+                <div class="standings-header pb-3">
+                    <h3 class="standings-title text-red-700 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 animate-pulse">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span id="live-matches-title">Jogos ao Vivo</span>
+                    </h3>
+                </div>
+                <div class="standings-content p-6">
+                    <div class="grid gap-3" id="live-matches-list">
+                        <!-- Live matches will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="w-full">
+            <div id="iniciados" class="tab-content active space-y-6">
+                <!-- Conteúdo será preenchido dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div id="login-modal" class="modal">
+            <div class="modal-content sm:max-w-md">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        Acesso Administrador
+                    </h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium">Password:</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="password-input" class="input pr-10" placeholder="Insere a password de administrador">
+                            <button type="button" class="password-toggle" id="password-toggle">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon" style="display: none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="alert alert-destructive" style="display: none;">
+                        Password incorreta!
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button id="login-btn" class="btn btn-primary flex-1">
+                            Entrar
+                        </button>
+                        <button id="cancel-login-btn" class="btn btn-outline flex-1">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Match Modal -->
+        <div id="edit-modal" class="modal">
+            <div class="modal-content">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold">Editar Jogo</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <h3 class="font-semibold text-lg" id="edit-teams"></h3>
+                        <p class="text-sm text-gray-500" id="edit-info"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1" id="edit-team1-label"></label>
+                            <input type="number" min="0" id="edit-score1" class="input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1" id="edit-team2-label"></label>
+                            <input type="number" min="0" id="edit-score2" class="input">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Estado do Jogo</label>
+                        <select id="edit-status" class="select">
+                            <option value="upcoming">Próximo</option>
+                            <option value="live">Ao Vivo</option>
+                            <option value="finished">Terminado</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button id="save-edit-btn" class="btn btn-primary flex-1">
+                            Guardar
+                        </button>
+                        <button id="cancel-edit-btn" class="btn btn-outline flex-1">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Standings Modal -->
+        <div id="standings-modal" class="modal">
+            <div class="modal-content" style="max-width: 32rem;">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold">Editar Classificação</h3>
+                    <p class="text-sm text-gray-500" id="standings-group-title"></p>
+                </div>
+                <div class="space-y-4">
+                    <div id="standings-edit-list">
+                        <!-- Standings edit fields serão inseridos aqui -->
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button id="save-standings-btn" class="btn btn-primary flex-1">
+                            Guardar
+                        </button>
+                        <button id="cancel-standings-btn" class="btn btn-outline flex-1">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============= Variáveis de Estado =============
+        let tournamentData = {
+            iniciados: null
+        };
+        let isAdminMode = false;
+        let editingMatch = null;
+        let editingStandings = null;
+
+        // ============= Dados Iniciais =============
+        const initialTournamentData = {
+            iniciados: {
+                name: "Iniciados",
+                groups: {
+                    I: ["Armil", "Vasco da Gama", "Ases", "Quinchães"]
+                },
+                manualStandings: {
+                    I: null
+                },
+                matches: [
+                    // Jornada 1
+                    {
+                        id: 1,
+                        time: "14h30",
+                        team1: "Armil",
+                        team2: "Vasco da Gama",
+                        field: "Campo Principal",
+                        jornada: 1,
+                        status: "upcoming",
+                        score1: 0,
+                        score2: 0,
+                    },
+                    {
+                        id: 2,
+                        time: "15h15",
+                        team1: "Quinchães",
+                        team2: "Ases",
+                        field: "Campo Principal",
+                        jornada: 1,
+                        status: "upcoming",
+                        score1: 0,
+                        score2: 0,
+                    },
+                    // Jornada 2
+                    {
+                        id: 3,
+                        time: "16h00",
+                        team1: "Ases",
+                        team2: "Vasco da Gama",
+                        field: "Campo Principal",
+                        jornada: 2,
+                        status: "upcoming",
+                        score1: 0,
+                        score2: 0,
+                    },
+                    {
+                        id: 4,
+                        time: "16h45",
+                        team1: "Armil",
+                        team2: "Quinchães",
+                        field: "Campo Principal",
+                        jornada: 2,
+                        status: "upcoming",
+                        score1: 0,
+                        score2: 0,
+                    },
+                    // Jornada 3
+                    {
+                        id: 5,
+                        time: "17h30",
+                        team1: "Vasco da Gama",
+                        team2: "Quinchães",
+                        field: "Campo Principal",
+                        jornada: 3,
+                        status: "upcoming",
+                        score1: 0,
+                        score2: 0,
+                    },
+                    {
+                        id: 6,
+                        time: "18h15",
+                        team1: "Armil",
+                        team2: "Ases",
+                        field: "Campo Principal",
+                        jornada: 3,
+                        status: "upcoming",
+                        score1: 0,
+                        score2: 0,
+                    },
+                ],
+                finals: [
+                    { time: "19h", match: "Entrega de Troféus", field: "" },
+                ],
+            }
+        };
+
+        // ============= Atualizar Relógio =============
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('pt-PT');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ============= Função para calcular classificações =============
+        function calculateStandings(category) {
+            const data = tournamentData[category];
+            if (!data) return { I: {} };
+            
+            const standings = { I: {} };
+
+            // Inicializar todas as equipas para cálculo automático SEMPRE
+            Object.entries(data.groups).forEach(([groupName, teams]) => {
+                standings[groupName] = {};
+                teams.forEach((team) => {
+                    standings[groupName][team] = {
+                        team,
+                        points: 0,
+                        played: 0,
+                        wins: 0,
+                        draws: 0,
+                        losses: 0,
+                        gf: 0,
+                        ga: 0,
+                    };
+                });
+            });
+
+            // Se existem classificações manuais, sobrescrever com essas
+            Object.keys(standings).forEach(groupName => {
+                if (data.manualStandings && data.manualStandings[groupName]) {
+                    standings[groupName] = data.manualStandings[groupName];
+                }
+            });
+
+            // Se não há classificações manuais, calcular pontuações baseado nos jogos
+            Object.keys(standings).forEach(groupName => {
+                if (!data.manualStandings || !data.manualStandings[groupName]) {
+                    data.matches.forEach((match) => {
+                        if (match.status === "finished") {
+                            let team1Group = null;
+                            let team2Group = null;
+
+                            Object.entries(data.groups).forEach(([gName, teams]) => {
+                                if (teams.includes(match.team1)) team1Group = gName;
+                                if (teams.includes(match.team2)) team2Group = gName;
+                            });
+
+                            if (team1Group && team2Group && team1Group === team2Group && team1Group === groupName) {
+                                const team1Stats = standings[groupName][match.team1];
+                                const team2Stats = standings[groupName][match.team2];
+
+                                if (team1Stats && team2Stats) {
+                                    team1Stats.played++;
+                                    team2Stats.played++;
+                                    team1Stats.gf += match.score1;
+                                    team1Stats.ga += match.score2;
+                                    team2Stats.gf += match.score2;
+                                    team2Stats.ga += match.score1;
+
+                                    if (match.score1 > match.score2) {
+                                        team1Stats.wins++;
+                                        team1Stats.points += 3;
+                                        team2Stats.losses++;
+                                    } else if (match.score1 < match.score2) {
+                                        team2Stats.wins++;
+                                        team2Stats.points += 3;
+                                        team1Stats.losses++;
+                                    } else {
+                                        team1Stats.draws++;
+                                        team2Stats.draws++;
+                                        team1Stats.points += 1;
+                                        team2Stats.points += 1;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Converter para arrays e ordenar
+            Object.keys(standings).forEach((group) => {
+                if (!data.manualStandings || !data.manualStandings[group]) {
+                    standings[group] = Object.values(standings[group]).sort(
+                        (a, b) => b.points - a.points || (b.gf - b.ga) - (a.gf - a.ga)
+                    );
+                }
+            });
+
+            return standings;
+        }
+
+        // ============= Funções Firebase =============
+        function updateMatch(matchId, updates) {
+            const catData = tournamentData.iniciados;
+            if (!catData || !catData.matches) return;
+
+            catData.matches.forEach((m, idx) => {
+                if (m.id === matchId) {
+                    const matchRef = window.dbRef(window.database, `iniciados/matches/${idx}`);
+                    window.dbUpdate(matchRef, updates);
+                }
+            });
+        }
+
+        function updateStandings(category, group, newStandings) {
+            const standingsRef = window.dbRef(window.database, `${category}/manualStandings/${group}`);
+            window.dbSet(standingsRef, newStandings);
+        }
+
+        function resetDatabase() {
+            if (confirm("Tem certeza que deseja reinicializar todos os dados? Isso irá apagar todos os resultados existentes.")) {
+                const catRef = window.dbRef(window.database, 'iniciados');
+                window.dbSet(catRef, initialTournamentData.iniciados);
+                alert("Dados reinicializados com sucesso!");
+            }
+        }
+
+        // ============= Função para escutar mudanças no Firebase =============
+        function listenToCategory() {
+            const catRef = window.dbRef(window.database, 'iniciados');
+            window.dbOnValue(catRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    // Se não existir dados, inicializar com dados padrão
+                    window.dbSet(catRef, initialTournamentData.iniciados);
+                    tournamentData.iniciados = initialTournamentData.iniciados;
+                } else {
+                    tournamentData.iniciados = data;
+                }
+                renderDashboard();
+            });
+        }
+
+        // ============= Renderização do Dashboard =============
+        function getStatusBadge(status) {
+            switch (status) {
+                case "live":
+                    return `
+                        <span class="badge badge-destructive animate-pulse">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 mr-1">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            AO VIVO
+                        </span>
+                    `;
+                case "finished":
+                    return `<span class="badge badge-secondary">TERMINADO</span>`;
+                case "upcoming":
+                    return `<span class="badge badge-outline">PRÓXIMO</span>`;
+                default:
+                    return `<span class="badge badge-outline">${status}</span>`;
+            }
+        }
+
+        function renderDashboard() {
+            // Só renderiza quando já carregamos todos os dados
+            if (!tournamentData.iniciados) {
+                return;
+            }
+
+            const data = tournamentData.iniciados;
+            const standings = calculateStandings('iniciados');
+
+            let html = `
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <!-- Classificações -->
+                    <div class="space-y-4">
+            `;
+
+            // Renderizar classificação
+            Object.entries(data.groups).forEach(([groupName, teams]) => {
+                const isManual = data.manualStandings && data.manualStandings[groupName];
+                html += `
+                    <div class="standings-card">
+                        <div class="standings-header flex items-center justify-between">
+                            <h3 class="standings-title">Grupo ${groupName}</h3>
+                            ${isAdminMode ? `
+                                <div class="flex items-center gap-2">
+                                    ${isManual ? '<span class="badge badge-outline text-xs">Manual</span>' : '<span class="badge badge-outline text-xs">Auto</span>'}
+                                    <button class="btn btn-outline btn-sm edit-standings-btn" data-category="iniciados" data-group="${groupName}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="standings-content">
+                            <div class="standings-table-header">
+                                <span>Pos</span>
+                                <span>Equipa</span>
+                                <span>Pts</span>
+                                <span>J</span>
+                            </div>
+                `;
+
+                if (standings[groupName]) {
+                    const arr = Array.isArray(standings[groupName]) ? standings[groupName] : Object.values(standings[groupName]);
+                    arr.forEach((team, index) => {
+                        html += `
+                            <div class="standings-row">
+                                <span class="position">${index + 1}º</span>
+                                <span class="team-name">${team.team}</span>
+                                <span class="points">${team.points}</span>
+                                <span class="games">${team.played}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+
+                <!-- Jogos -->
+                <div class="space-y-4">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Jogos
+                    </h2>
+            `;
+
+            // Determinar número de jornadas
+            const maxJornadas = 3;
+            
+            for (let jornada = 1; jornada <= maxJornadas; jornada++) {
+                const jornadaMatches = data.matches.filter((match) => match.jornada === jornada);
+                if (!jornadaMatches || jornadaMatches.length === 0) continue;
+
+                html += `
+                    <div class="standings-card">
+                        <div class="standings-header">
+                            <h3 class="standings-title">Jornada ${jornada}</h3>
+                        </div>
+                        <div class="standings-content p-6">
+                            <div class="space-y-3">
+                `;
+
+                jornadaMatches.forEach((match) => {
+                    html += `
+                        <div class="match-card">
+                            <div class="match-header">
+                                <div class="match-teams">${match.team1} vs ${match.team2}</div>
+                                ${match.status !== "upcoming" ? `<div class="match-score">${match.score1} - ${match.score2}</div>` : ''}
+                            </div>
+                            <div class="match-info">
+                                <div class="match-time-field">
+                                    <span class="match-time">${match.time}</span>
+                                    <div class="match-field">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        <span>${match.field}</span>
+                                    </div>
+                                </div>
+                                <div class="match-actions">
+                                    ${getStatusBadge(match.status)}
+                                    ${isAdminMode ? `
+                                        <button class="btn btn-outline btn-sm edit-match-btn" data-match-id="${match.id}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="standings-card">
+                    <div class="standings-header">
+                        <h3 class="standings-title flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-500">
+                                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                                <path d="M4 22h16"></path>
+                                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                            </svg>
+                            Entrega de Prémios
+                        </h3>
+                    </div>
+                    <div class="standings-content p-6">
+                        <div class="space-y-3">
+            `;
+
+            data.finals.forEach((final) => {
+                html += `
+                    <div class="match-card bg-yellow-50 border-yellow-200">
+                        <div class="match-header">
+                            <div class="match-teams text-center">
+                                🏆 ${final.match}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+            `;
+
+            document.getElementById('iniciados').innerHTML = html;
+
+            // Mostrar ou esconder "Jogos ao Vivo"
+            const liveMatches = tournamentData.iniciados.matches.filter(match => match.status === "live");
+            const liveMatchesContainer = document.getElementById('live-matches-container');
+            const liveMatchesList = document.getElementById('live-matches-list');
+            const liveMatchesTitle = document.getElementById('live-matches-title');
+
+            if (liveMatches.length > 0) {
+                liveMatchesContainer.style.display = 'block';
+                liveMatchesTitle.textContent = `Jogos ao Vivo - ${tournamentData.iniciados.name}`;
+
+                let liveMatchesHtml = '';
+                liveMatches.forEach(match => {
+                    liveMatchesHtml += `
+                        <div class="match-card border-red-200 bg-white">
+                            <div class="match-header">
+                                <div class="match-teams">${match.team1} vs ${match.team2}</div>
+                                <div class="match-score">${match.score1} - ${match.score2}</div>
+                            </div>
+                            <div class="match-info">
+                                <div class="match-time-field">
+                                    <div class="match-field">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        <span>${match.field}</span>
+                                    </div>
+                                </div>
+                                <div class="match-actions">
+                                    <span class="badge badge-destructive animate-pulse">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 mr-1">
+                                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                        </svg>
+                                        AO VIVO
+                                    </span>
+                                    ${isAdminMode ? `
+                                        <button class="btn btn-outline btn-sm edit-match-btn" data-match-id="${match.id}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                liveMatchesList.innerHTML = liveMatchesHtml;
+            } else {
+                liveMatchesContainer.style.display = 'none';
+            }
+
+            // Estabelece event listeners para botões "Editar" após re-render
+            document.querySelectorAll('.edit-match-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const matchId = parseInt(this.getAttribute('data-match-id'));
+                    let match = null;
+
+                    // Encontrar o jogo
+                    const arr = tournamentData.iniciados.matches || [];
+                    arr.forEach(m => { if (m.id === matchId) match = m; });
+
+                    if (match) {
+                        editingMatch = match;
+                        document.getElementById('edit-teams').textContent = `${match.team1} vs ${match.team2}`;
+                        document.getElementById('edit-info').textContent = `${match.time} - ${match.field}`;
+                        document.getElementById('edit-team1-label').textContent = match.team1;
+                        document.getElementById('edit-team2-label').textContent = match.team2;
+                        document.getElementById('edit-score1').value = match.score1;
+                        document.getElementById('edit-score2').value = match.score2;
+                        document.getElementById('edit-status').value = match.status;
+                        document.getElementById('edit-modal').classList.add('active');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.edit-standings-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const category = this.getAttribute('data-category');
+                    const group = this.getAttribute('data-group');
+                    const standings = calculateStandings(category);
+                    const groupStandings = Array.isArray(standings[group]) ? standings[group] : Object.values(standings[group]);
+
+                    editingStandings = { category, group };
+                    document.getElementById('standings-group-title').textContent = `${tournamentData[category].name} - Grupo ${group}`;
+
+                    let html = '';
+                    groupStandings.forEach((team, index) => {
+                        html += `
+                            <div class="grid grid-cols-4 gap-2 items-center p-2 border rounded">
+                                <span class="font-medium">${index + 1}º ${team.team}</span>
+                                <input type="number" min="0" value="${team.points}" class="input input-sm standings-points" data-team="${team.team}" placeholder="Pts">
+                                <input type="number" min="0" value="${team.played}" class="input input-sm standings-played" data-team="${team.team}" placeholder="J">
+                                <input type="number" min="0" value="${team.wins}" class="input input-sm standings-wins" data-team="${team.team}" placeholder="V">
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('standings-edit-list').innerHTML = `
+                        <div class="grid grid-cols-4 gap-2 text-xs font-semibold text-gray-500 border-b pb-2 mb-2">
+                            <span>Equipa</span>
+                            <span>Pontos</span>
+                            <span>Jogos</span>
+                            <span>Vitórias</span>
+                        </div>
+                        ${html}
+                    `;
+
+                    document.getElementById('standings-modal').classList.add('active');
+                });
+            });
+        }
+
+        // ============= Admin Login =============
+        const ADMIN_PASSWORD = "admin2024";
+        
+        document.getElementById('admin-login-btn').addEventListener('click', function () {
+            document.getElementById('login-modal').classList.add('active');
+            document.getElementById('password-input').value = '';
+            document.getElementById('login-error').style.display = 'none';
+        });
+
+        document.getElementById('cancel-login-btn').addEventListener('click', function () {
+            document.getElementById('login-modal').classList.remove('active');
+        });
+
+        document.getElementById('login-btn').addEventListener('click', function () {
+            const password = document.getElementById('password-input').value;
+            if (password === ADMIN_PASSWORD) {
+                isAdminMode = true;
+                document.getElementById('admin-login-btn').style.display = 'none';
+                document.getElementById('admin-logout-btn').style.display = 'inline-flex';
+                document.getElementById('admin-badge').style.display = 'block';
+                document.getElementById('login-modal').classList.remove('active');
+                renderDashboard();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+                document.getElementById('password-input').value = '';
+            }
+        });
+
+        document.getElementById('admin-logout-btn').addEventListener('click', function () {
+            isAdminMode = false;
+            document.getElementById('admin-login-btn').style.display = 'inline-flex';
+            document.getElementById('admin-logout-btn').style.display = 'none';
+            document.getElementById('admin-badge').style.display = 'none';
+            renderDashboard();
+        });
+
+        document.getElementById('password-toggle').addEventListener('click', function () {
+            const passwordInput = document.getElementById('password-input');
+            const eyeIcon = document.querySelector('.eye-icon');
+            const eyeOffIcon = document.querySelector('.eye-off-icon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.style.display = 'none';
+                eyeOffIcon.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.style.display = 'block';
+                eyeOffIcon.style.display = 'none';
+            }
+        });
+
+        document.getElementById('password-input').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('login-btn').click();
+            }
+        });
+
+        // ============= Modal Event Listeners =============
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                    editingMatch = null;
+                    editingStandings = null;
+                }
+            });
+        });
+
+        // ============= Edit Match =============
+        document.getElementById('save-edit-btn').addEventListener('click', function () {
+            if (editingMatch) {
+                const updates = {
+                    score1: parseInt(document.getElementById('edit-score1').value) || 0,
+                    score2: parseInt(document.getElementById('edit-score2').value) || 0,
+                    status: document.getElementById('edit-status').value
+                };
+
+                updateMatch(editingMatch.id, updates);
+                document.getElementById('edit-modal').classList.remove('active');
+                editingMatch = null;
+            }
+        });
+
+        document.getElementById('cancel-edit-btn').addEventListener('click', function () {
+            document.getElementById('edit-modal').classList.remove('active');
+            editingMatch = null;
+        });
+
+        // ============= Edit Standings =============
+        document.getElementById('save-standings-btn').addEventListener('click', function () {
+            if (editingStandings) {
+                const newStandings = [];
+                const teams = document.querySelectorAll('.standings-points');
+
+                teams.forEach(input => {
+                    const team = input.getAttribute('data-team');
+                    const points = parseInt(document.querySelector(`.standings-points[data-team="${team}"]`).value) || 0;
+                    const played = parseInt(document.querySelector(`.standings-played[data-team="${team}"]`).value) || 0;
+                    const wins = parseInt(document.querySelector(`.standings-wins[data-team="${team}"]`).value) || 0;
+
+                    const draws = Math.max(0, played - wins - Math.max(0, played - wins - Math.floor((points - wins * 3))));
+                    const losses = Math.max(0, played - wins - draws);
+
+                    newStandings.push({
+                        team,
+                        points,
+                        played,
+                        wins,
+                        draws,
+                        losses,
+                        gf: 0,
+                        ga: 0
+                    });
+                });
+
+                newStandings.sort((a, b) => b.points - a.points);
+
+                updateStandings(editingStandings.category, editingStandings.group, newStandings);
+                document.getElementById('standings-modal').classList.remove('active');
+                editingStandings = null;
+            }
+        });
+
+        document.getElementById('cancel-standings-btn').addEventListener('click', function () {
+            document.getElementById('standings-modal').classList.remove('active');
+            editingStandings = null;
+        });
+
+        // ============= Reset Database =============
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'reset-db-btn') {
+                resetDatabase();
+            }
+        });
+
+        // ============= Inicialização =============
+        window.addEventListener('load', function() {
+            // Aguardar que o Firebase esteja disponível
+            setTimeout(() => {
+                if (window.database) {
+                    listenToCategory();
+                } else {
+                    console.error('Firebase não foi inicializado corretamente');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
